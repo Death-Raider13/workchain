@@ -110,10 +110,66 @@ export function useBlockchain() {
     }
   };
 
+  const hashFile = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const requestRefund = async (escrowId: number) => {
+    setLoading(true);
+    if (!window.ethereum || process.env.NEXT_PUBLIC_MOCK_BLOCKCHAIN === 'true') {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return true;
+    }
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(WORKCHAIN_ADRESS, WORKCHAIN_ABI, signer);
+      const tx = await contract.requestRefund(escrowId);
+      await tx.wait();
+      return true;
+    } catch (err: any) {
+      setError(err.message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resolveDispute = async (escrowId: number, workerAmount: string, employerAmount: string) => {
+    setLoading(true);
+    if (!window.ethereum || process.env.NEXT_PUBLIC_MOCK_BLOCKCHAIN === 'true') {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return true;
+    }
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(WORKCHAIN_ADRESS, WORKCHAIN_ABI, signer);
+      const tx = await contract.resolveDispute(
+        escrowId, 
+        ethers.parseEther(workerAmount), 
+        ethers.parseEther(employerAmount)
+      );
+      await tx.wait();
+      return true;
+    } catch (err: any) {
+      setError(err.message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     createEscrow,
     releaseMilestone,
     raiseDispute,
+    requestRefund,
+    resolveDispute,
+    hashFile,
     loading,
     error
   };

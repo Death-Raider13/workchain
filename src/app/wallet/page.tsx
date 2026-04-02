@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { AuthGuard } from '@/components/AuthGuard';
 
 interface Transaction {
   id: string;
@@ -72,7 +73,8 @@ export default function Wallet() {
   </div>;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10 animate-fade-in pb-20">
+    <AuthGuard>
+      <div className="max-w-4xl mx-auto space-y-10 animate-fade-in pb-20">
       {/* Wallet Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-border-default pb-10">
         <div className="space-y-3">
@@ -153,6 +155,7 @@ export default function Wallet() {
           </table>
         </div>
       </div>
-    </div>
+      </div>
+    </AuthGuard>
   );
 }

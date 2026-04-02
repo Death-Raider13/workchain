@@ -10,14 +10,23 @@ export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setRole(session.user.user_metadata?.role || 'worker');
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setRole(session.user.user_metadata?.role || 'worker');
+      } else {
+        setRole(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -30,11 +39,25 @@ export function Navigation() {
 
   if (pathname === '/login' || pathname === '/signup') return null;
 
+  const dashboardHref = role === 'employer'
+    ? '/employer/dashboard'
+    : role === 'worker'
+      ? '/worker/dashboard'
+      : '/';
+
   const tabs = [
-    { name: 'Dashboard', href: '/' },
-    { name: 'Job Board', href: '/jobs' },
-    { name: 'Wallet', href: '/wallet' },
+    { name: 'Home', href: '/' },
+    { name: 'Public Ledger', href: '/jobs' },
   ];
+
+  if (user) {
+    tabs.push({ name: 'Dashboard', href: dashboardHref });
+    tabs.push({ name: 'Wallet', href: '/wallet' });
+  }
+
+  if (role === 'admin') {
+    tabs.push({ name: 'Admin', href: '/admin' });
+  }
 
   return (
     <div className="mb-10">
@@ -43,21 +66,20 @@ export function Navigation() {
           {tabs.map((tab) => {
             const isActive = pathname === tab.href;
             return (
-              <Link 
-                key={tab.name} 
+              <Link
+                key={tab.name}
                 href={tab.href}
-                className={`px-5 py-2.5 text-sm font-semibold transition-all rounded-lg ${
-                  isActive 
-                    ? 'bg-accent-monad text-white shadow-lg shadow-accent-monad/20' 
-                    : 'text-text-secondary hover:text-text-primary hover:bg-background-elevated/50'
-                }`}
+                className={`px-5 py-2.5 text-sm font-semibold transition-all rounded-lg ${isActive
+                  ? 'bg-accent-monad text-white shadow-lg shadow-accent-monad/20'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-background-elevated/50'
+                  }`}
               >
                 {tab.name}
               </Link>
             );
           })}
         </nav>
-        
+
         <div className="flex gap-4 items-center pr-2">
           {user ? (
             <div className="flex items-center gap-4">
@@ -67,7 +89,7 @@ export function Navigation() {
                   {user.email?.split('@')[0]}
                 </span>
               </div>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="btn-secondary text-[10px] uppercase tracking-widest py-2 px-4"
               >
@@ -75,12 +97,9 @@ export function Navigation() {
               </button>
             </div>
           ) : (
-            <div className="flex gap-6 items-center">
-              <Link href="/login" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
-                Sign In
-              </Link>
-              <Link href="/signup" className="btn-primary text-[11px] uppercase tracking-widest py-2.5 px-8">
-                Get Started
+            <div className="flex gap-4 items-center">
+              <Link href="/signup" className="btn-primary text-[11px] uppercase tracking-widest py-2 px-6">
+                Join Network
               </Link>
             </div>
           )}

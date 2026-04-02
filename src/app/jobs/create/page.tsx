@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useBlockchain } from '@/hooks/useBlockchain';
+import { RoleGate } from '@/components/RoleGate';
 
 interface MilestoneInput {
   description: string;
@@ -109,7 +110,8 @@ export default function CreateJob() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-10 animate-fade-in pb-20">
+    <RoleGate allowedRoles={['employer']}>
+      <div className="max-w-3xl mx-auto space-y-10 animate-fade-in pb-20">
       {/* Header */}
       <div className="border-b border-border-default pb-10 space-y-3">
         <div className="flex items-center gap-3">
@@ -282,6 +284,7 @@ export default function CreateJob() {
           </div>
         )}
       </form>
-    </div>
+      </div>
+    </RoleGate>
   );
 }

@@ -13,6 +13,8 @@ export default function Signup() {
   const [submitted, setSubmitted] = useState(false);
   const router = useRouter();
 
+  const [role, setRole] = useState<'employer' | 'worker'>('worker');
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -22,6 +24,12 @@ export default function Signup() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            role: role,
+            full_name: email.split('@')[0], // Placeholder
+          }
+        }
       });
 
       if (error) throw error;
@@ -30,7 +38,7 @@ export default function Signup() {
       if (data?.user && !data.session) {
         setSubmitted(true);
       } else {
-        router.push('/');
+        router.push(role === 'employer' ? '/employer/dashboard' : '/worker/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during signup');
@@ -53,7 +61,7 @@ export default function Signup() {
             </p>
             <div className="bg-accent-monad/5 border border-accent-monad/20 p-4 rounded-xl">
               <p className="text-[10px] text-accent-monad font-bold uppercase tracking-widest leading-loose">
-                Please authorize the request within your mail client to finalize organization deployment on the Monad network.
+                Please authorize the request within your mail client to finalize organization deployment as a <span className="text-white underline">{role.toUpperCase()}</span> on the Monad network.
               </p>
             </div>
             <div className="pt-6 border-t border-border-default/50">
@@ -75,8 +83,8 @@ export default function Signup() {
           <div className="w-12 h-12 bg-accent-monad rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-accent-monad/20">
             <div className="w-5 h-5 border-2 border-white rounded-full"></div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Create Organization</h1>
-          <p className="text-text-secondary text-sm">Register your institutional identity on the Monad network</p>
+          <h1 className="text-3xl font-bold tracking-tight text-white uppercase tracking-tighter">Initialize Protocol</h1>
+          <p className="text-text-secondary text-sm">Deploy your institutional identity on the Monad network</p>
         </div>
 
         <div className="card">
@@ -86,12 +94,48 @@ export default function Signup() {
             </div>
           )}
 
+          <div className="mb-10">
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-text-secondary ml-1 mb-4 block">Select Operational Role</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                type="button"
+                onClick={() => setRole('employer')}
+                className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all ${
+                  role === 'employer' 
+                    ? 'bg-accent-monad/10 border-accent-monad shadow-lg shadow-accent-monad/10' 
+                    : 'bg-background-elevated border-border-default hover:border-text-secondary'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-lg bg-background-surface flex items-center justify-center text-xl shadow-inner">🏢</div>
+                <div className="text-center">
+                  <p className={`text-[11px] font-black uppercase tracking-widest ${role === 'employer' ? 'text-white' : 'text-text-secondary'}`}>Organization</p>
+                  <p className="text-[9px] text-text-muted mt-0.5 uppercase tracking-tighter">Pool Liquidity</p>
+                </div>
+              </button>
+              <button 
+                type="button"
+                onClick={() => setRole('worker')}
+                className={`flex flex-col items-center gap-3 p-5 rounded-xl border transition-all ${
+                  role === 'worker' 
+                    ? 'bg-accent-monad/10 border-accent-monad shadow-lg shadow-accent-monad/10' 
+                    : 'bg-background-elevated border-border-default hover:border-text-secondary'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-lg bg-background-surface flex items-center justify-center text-xl shadow-inner">⚡</div>
+                <div className="text-center">
+                  <p className={`text-[11px] font-black uppercase tracking-widest ${role === 'worker' ? 'text-white' : 'text-text-secondary'}`}>Developer</p>
+                  <p className="text-[9px] text-text-muted mt-0.5 uppercase tracking-tighter">Deliver Proof</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <form onSubmit={handleSignup} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary ml-1">Admin Email Address</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary ml-1">Administrative Email</label>
               <input
                 type="email"
-                className="input-base w-full font-mono"
+                className="input-base w-full font-mono text-xs"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@organization.com"
@@ -99,13 +143,13 @@ export default function Signup() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary ml-1">Initialize Password</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary ml-1">Secure Access Key</label>
               <input
                 type="password"
-                className="input-base w-full font-mono"
+                className="input-base w-full font-mono text-xs"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Secure access key"
+                placeholder="••••••••"
                 required
                 minLength={6}
               />
@@ -113,10 +157,10 @@ export default function Signup() {
 
             <button 
               type="submit" 
-              className="btn-primary w-full text-xs uppercase tracking-widest py-3.5 shadow-lg shadow-accent-monad/20 mt-4"
+              className="btn-primary w-full text-[11px] font-black uppercase tracking-widest py-4 shadow-lg shadow-accent-monad/20 mt-4 h-14"
               disabled={loading}
             >
-              {loading ? 'Processing...' : 'Deploy Identity'}
+              {loading ? 'DEPLOYING...' : `AUTHORIZE ${role === 'employer' ? 'ISSUER' : 'PROVIDER'} IDENTITY`}
             </button>
           </form>
 
