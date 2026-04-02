@@ -1,79 +1,157 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
+
+interface JobListing {
+  id: string;
+  title: string;
+  employer_address: string;
+  total_staked: number;
+  status: string;
+  created_at: string;
+}
 
 export default function JobBoard() {
   const [title, setTitle] = useState('');
   const [budget, setBudget] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [listings, setListings] = useState<JobListing[]>([]);
 
-  const listings = [
-    { id: 1, initials: 'AO', bg: '#064E3B', color: '#34D399', title: 'Logo + brand identity', author: 'Adaeze O.', location: 'Lagos', milestones: 2, budget: 180 },
-    { id: 2, initials: 'KM', bg: '#4C1D95', color: '#D8B4FE', title: 'Python data scraper', author: 'Kunle M.', location: 'Ibadan', milestones: 3, budget: 300 },
-  ];
+  const fetchListings = async () => {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) console.error('Error fetching listings:', error);
+    else setListings(data || []);
+  };
+
+  useEffect(() => {
+    fetchListings();
+    
+    const channel = supabase
+      .channel('job-board-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, fetchListings)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handlePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !budget) return;
+
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Authentication required');
+
+      const { error } = await supabase
+        .from('jobs')
+        .insert({
+          title,
+          total_staked: Number(budget),
+          employer_address: user.user_metadata?.wallet_address || '0x7e1b...d91c',
+          worker_address: '0x0000000000000000000000000000000000000000', // Open listing
+          status: 'active'
+        });
+
+      if (error) throw error;
+      
+      setTitle('');
+      setBudget('');
+      alert('Job posted successfully to the decentralized network!');
+    } catch (err: any) {
+      alert(err.message || 'Failed to post job');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-      <div style={{ marginBottom: '3rem' }}>
-        <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', color: 'var(--secondary-text)', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
-          Post a job
-        </p>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <input 
-            type="text" 
-            placeholder="Job title (e.g. UI designer for landing page...)" 
-            className="input-base"
-            style={{ fontSize: '1.125rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-            <input 
-              type="text" 
-              placeholder="Budget (USDC)" 
-              className="input-base"
-              style={{ fontSize: '1.125rem' }}
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-            />
-            <button className="btn-secondary" style={{ padding: '0.5rem 1rem' }}>Post</button>
-          </div>
+    <div className="max-w-4xl mx-auto space-y-12 animate-fade-in pb-20">
+      {/* Post Section */}
+      <div className="card space-y-8 bg-gradient-to-br from-background-surface to-background-elevated/30">
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-monad">Institutional Marketplace</p>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Broadcast Requirement</h2>
         </div>
+        
+        <form onSubmit={handlePost} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary ml-1">Service Designation</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Protocol Security Audit" 
+                className="input-field text-sm"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-secondary ml-1">Allocated (MON)</label>
+              <input 
+                type="number" 
+                placeholder="500" 
+                className="input-field text-sm font-mono"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                required
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="btn-primary py-3 text-[10px] uppercase tracking-widest shadow-lg shadow-accent-monad/20"
+            >
+              {loading ? 'Transmitting...' : 'Post Listing'}
+            </button>
+          </div>
+        </form>
       </div>
 
-      <div>
-        <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', color: 'var(--secondary-text)', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
-          Open Listings
-        </p>
+      {/* Open Listings */}
+      <div className="space-y-8">
+        <div className="flex items-center gap-3 border-b border-border-default pb-4">
+          <div className="w-1.5 h-6 bg-accent-monad rounded-full"></div>
+          <h3 className="text-xl font-bold tracking-tight uppercase">Open Network Listings</h3>
+        </div>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {listings.map(job => (
-            <div key={job.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                <div style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  borderRadius: '50%', 
-                  backgroundColor: job.bg, 
-                  color: job.color,
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  fontSize: '0.875rem'
-                }}>
-                  {job.initials}
-                </div>
-                <div>
-                  <p style={{ fontWeight: 500, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{job.title}</p>
-                  <p style={{ color: 'var(--secondary-text)', fontSize: '0.875rem' }}>
-                    {job.author} &bull; {job.location} &bull; {job.milestones} milestones
-                  </p>
-                </div>
-              </div>
-              <span style={{ color: 'var(--accent-green)', fontWeight: 500 }}>${job.budget}</span>
+        <div className="grid grid-cols-1 gap-4">
+          {listings.length === 0 ? (
+            <div className="py-20 text-center opacity-50 font-mono text-[10px] uppercase tracking-[0.2em]">
+              Scanning for available contracts...
             </div>
-          ))}
+          ) : (
+            listings.map(job => (
+              <Link key={job.id} href={`/jobs/${job.id}`}>
+                <div className="card group hover:border-accent-monad/30 transition-all flex items-center justify-between py-6 px-8 bg-background-surface/50">
+                  <div className="flex items-center gap-6">
+                    <div className="w-12 h-12 rounded-xl bg-background-elevated border border-border-default flex items-center justify-center font-bold text-text-secondary group-hover:bg-accent-monad group-hover:text-white transition-colors uppercase tracking-widest text-[10px]">
+                      {job.title.slice(0, 2)}
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold group-hover:text-accent-monad transition-colors">{job.title}</h4>
+                      <p className="text-[10px] text-text-secondary font-mono uppercase tracking-widest">
+                        Issuer: {job.employer_address.slice(0, 8)}... &bull; {new Date(job.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-white">{job.total_staked} <span className="text-[10px] font-medium text-text-secondary">MON</span></p>
+                    <span className="badge badge-active text-[9px] uppercase tracking-widest">Available</span>
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </div>

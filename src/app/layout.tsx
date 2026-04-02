@@ -3,8 +3,8 @@ import './globals.css';
 import { Navigation } from '@/components/Navigation';
 
 export const metadata: Metadata = {
-  title: 'WorkChain',
-  description: 'WorkChain MVP on Monad Testnet',
+  title: 'WorkChain | Institutional Labor Escrow',
+  description: 'On-chain labor escrow for the future of work on Monad',
 };
 
 export default function RootLayout({
@@ -13,24 +13,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <div className="app-container">
-          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ width: '32px', height: '32px', backgroundColor: 'var(--accent-green)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '16px', height: '16px', border: '2px solid #000', borderRadius: '50%' }}></div>
+    <html lang="en" className="dark">
+      <body className="antialiased bg-background-primary text-text-primary selection:bg-accent-monad/30 min-h-screen">
+        <header className="glass-nav sticky top-0 z-50 py-4 mb-8">
+          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="w-9 h-9 bg-accent-monad rounded-lg flex items-center justify-center shadow-lg shadow-accent-monad/20 transition-transform group-hover:scale-105">
+                <div className="w-4 h-4 border-2 border-white rounded-full"></div>
               </div>
-              <span className="text-h1" style={{ fontSize: '1.25rem' }}>WorkChain on Monad</span>
+              <span className="text-xl font-bold tracking-tight text-white">WorkChain</span>
             </div>
-            <div style={{ background: '#E0F2FE', color: '#0369A1', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 600 }}>
-              Testnet
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex bg-background-elevated/50 border border-border-default rounded-full px-3 py-1 items-center gap-2">
+                <div className="w-2 h-2 bg-status-success rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-text-secondary">Monad Testnet</span>
+              </div>
             </div>
-          </header>
-          
+          </div>
+        </header>
+
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           <Navigation />
-          
-          <main>
+          <main className="animate-fade-in">
             {children}
           </main>
         </div>
