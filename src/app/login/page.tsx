@@ -10,6 +10,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [resendError, setResendError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,6 +34,22 @@ export default function Login() {
     }
   };
 
+  const handleResend = async () => {
+    setResendStatus('loading');
+    setResendError(null);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      if (error) throw error;
+      setResendStatus('success');
+    } catch (err: any) {
+      setResendStatus('error');
+      setResendError(err.message || 'Failed to resend verification email');
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] animate-fade-in">
       <div className="w-full max-w-[440px] space-y-8">
@@ -45,8 +63,21 @@ export default function Login() {
 
         <div className="card">
           {error && (
-            <div className="bg-status-danger/10 border border-status-danger/20 text-status-danger px-4 py-3 mb-6 rounded-lg text-xs font-bold uppercase tracking-wider">
-              {error}
+            <div className="bg-status-danger/10 border border-status-danger/20 text-status-danger px-4 py-3 mb-6 rounded-lg text-xs font-bold uppercase tracking-wider flex flex-col gap-3">
+              <span>{error}</span>
+              {error.toLowerCase().includes('email not confirmed') && (
+                <div className="pt-3 border-t border-status-danger/20">
+                  <button 
+                    onClick={handleResend}
+                    disabled={resendStatus === 'loading'}
+                    className="text-white bg-status-danger/20 hover:bg-status-danger/30 transition-colors px-4 py-2 rounded text-[10px] uppercase font-bold tracking-widest w-full"
+                  >
+                    {resendStatus === 'loading' ? 'Sending...' : 'Resend Verification Link'}
+                  </button>
+                  {resendStatus === 'success' && <p className="text-status-success text-[10px] mt-2">Verification email sent successfully!</p>}
+                  {resendStatus === 'error' && <p className="text-status-danger text-[10px] mt-2">{resendError}</p>}
+                </div>
+              )}
             </div>
           )}
 

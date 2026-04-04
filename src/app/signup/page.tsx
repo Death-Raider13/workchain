@@ -11,6 +11,8 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [resendError, setResendError] = useState<string | null>(null);
   const router = useRouter();
 
   const [role, setRole] = useState<'employer' | 'worker'>('worker');
@@ -47,6 +49,22 @@ export default function Signup() {
     }
   };
 
+  const handleResend = async () => {
+    setResendStatus('loading');
+    setResendError(null);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      if (error) throw error;
+      setResendStatus('success');
+    } catch (err: any) {
+      setResendStatus('error');
+      setResendError(err.message || 'Failed to resend verification email');
+    }
+  };
+
   if (submitted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] animate-fade-in">
@@ -64,8 +82,16 @@ export default function Signup() {
                 Please authorize the request within your mail client to finalize organization deployment as a <span className="text-white underline">{role.toUpperCase()}</span> on the Monad network.
               </p>
             </div>
-            <div className="pt-6 border-t border-border-default/50">
-              <Link href="/login" className="btn-secondary w-full py-3 text-[10px] uppercase tracking-widest">
+            <div className="pt-6 border-t border-border-default/50 space-y-3">
+              <button 
+                onClick={handleResend}
+                disabled={resendStatus === 'loading' || resendStatus === 'success'}
+                className="btn-primary w-full py-3 text-[10px] uppercase tracking-widest shadow-lg shadow-accent-monad/20"
+              >
+                {resendStatus === 'loading' ? 'Sending...' : resendStatus === 'success' ? 'Email Sent!' : 'Resend Link'}
+              </button>
+              {resendStatus === 'error' && <p className="text-status-danger text-[10px] text-center">{resendError}</p>}
+              <Link href="/login" className="btn-secondary w-full py-3 text-[10px] uppercase tracking-widest block text-center">
                 Return to Portal
               </Link>
             </div>
