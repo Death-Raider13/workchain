@@ -19,34 +19,60 @@ export default function WorkerDashboard() {
   const [jobs, setJobs] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchWorkerData = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    // --- HACKATHON DEMO MODE: Mock data instead of auth-dependent fetch ---
+    const mockJobs = [
+      {
+        id: 'demo-worker-001',
+        title: 'Monad DEX Interface Build',
+        status: 'active',
+        total_staked: 4.2,
+        employer_address: '0x3c8a...b5e2',
+        milestones: [{ id: 1, title: 'UI Design' }, { id: 2, title: 'Integration' }, { id: 3, title: 'Testing' }],
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'demo-worker-002',
+        title: 'NFT Marketplace Smart Contract',
+        status: 'active',
+        total_staked: 4.0,
+        employer_address: '0x7f2e...c1d9',
+        milestones: [{ id: 1, title: 'Contract' }, { id: 2, title: 'Audit' }],
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'demo-worker-003',
+        title: 'Token Vesting Dashboard',
+        status: 'completed',
+        total_staked: 3.8,
+        employer_address: '0x5d4b...e7a3',
+        milestones: [{ id: 1, title: 'Design' }, { id: 2, title: 'Build' }],
+        created_at: new Date().toISOString(),
+      },
+    ];
 
-      // Fetch jobs where user is worker
-      const { data: workerJobs, error } = await supabase
-        .from('jobs')
-        .select(`
-          *,
-          milestones (*)
-        `)
-        .eq('worker_address', '0x7e1b...') // Placeholder for actual wallet mapping
-        .order('created_at', { ascending: false });
+    setJobs(mockJobs);
+    setStats({
+      totalEarned: 8.2,
+      activeJobs: 2,
+      reputation: 98,
+      completionRate: '96%',
+    });
+    setLoading(false);
 
-      if (workerJobs) {
-        setJobs(workerJobs);
-        const active = workerJobs.filter(j => j.status === 'active').length;
-        const earned = workerJobs
-          .filter(j => j.status === 'completed')
-          .reduce((sum, j) => sum + Number(j.total_staked), 0);
-        
-        setStats(prev => ({ ...prev, activeJobs: active, totalEarned: earned }));
-      }
-      setLoading(false);
-    };
-
-    fetchWorkerData();
+    // --- ORIGINAL (re-enable after hackathon) ---
+    // const fetchWorkerData = async () => {
+    //   setLoading(true);
+    //   const { data: { user } } = await supabase.auth.getUser();
+    //   if (!user) return;
+    //   const { data: workerJobs } = await supabase
+    //     .from('jobs')
+    //     .select('*, milestones (*)')
+    //     .eq('worker_address', '0x7e1b...')
+    //     .order('created_at', { ascending: false });
+    //   if (workerJobs) { ... }
+    //   setLoading(false);
+    // };
+    // fetchWorkerData();
   }, []);
 
   if (loading) return (
@@ -55,6 +81,7 @@ export default function WorkerDashboard() {
       <p className="text-text-secondary text-[10px] font-bold uppercase tracking-widest">Syncing Provider Ledger...</p>
     </div>
   );
+
 
   return (
     <RoleGate allowedRoles={['worker']}>

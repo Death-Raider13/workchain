@@ -6,30 +6,32 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
 export default function Home() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  // --- HACKATHON DEMO MODE: Disabled role-based redirect ---
+  // const router = useRouter();
+  // const [loading, setLoading] = useState(true);
+  //
+  // useEffect(() => {
+  //   const checkUser = async () => {
+  //     const { data: { session } } = await supabase.auth.getSession();
+  //     if (session?.user) {
+  //       const role = session.user.user_metadata?.role || 'worker';
+  //       if (role === 'employer') router.push('/employer/dashboard');
+  //       else if (role === 'worker') router.push('/worker/dashboard');
+  //       else if (role === 'admin') router.push('/admin');
+  //     } else {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   checkUser();
+  // }, [router]);
+  //
+  // if (loading) return (
+  //   <div className="flex flex-col items-center justify-center py-24 space-y-4">
+  //     <div className="w-10 h-10 border-4 border-accent-monad/20 border-t-accent-monad rounded-full animate-spin"></div>
+  //     <p className="text-text-secondary text-sm font-mono uppercase tracking-widest animate-pulse">Initializing Protocol...</p>
+  //   </div>
+  // );
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const role = session.user.user_metadata?.role || 'worker';
-        if (role === 'employer') router.push('/employer/dashboard');
-        else if (role === 'worker') router.push('/worker/dashboard');
-        else if (role === 'admin') router.push('/admin');
-      } else {
-        setLoading(false);
-      }
-    };
-    checkUser();
-  }, [router]);
-
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center py-24 space-y-4">
-      <div className="w-10 h-10 border-4 border-accent-monad/20 border-t-accent-monad rounded-full animate-spin"></div>
-      <p className="text-text-secondary text-sm font-mono uppercase tracking-widest animate-pulse">Initializing Protocol...</p>
-    </div>
-  );
 
   return (
     <div className="max-w-6xl mx-auto py-20 px-4 animate-fade-in">

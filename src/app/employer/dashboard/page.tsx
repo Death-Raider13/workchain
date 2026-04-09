@@ -18,38 +18,60 @@ export default function EmployerDashboard() {
   const [jobs, setJobs] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchEmployerData = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    // --- HACKATHON DEMO MODE: Mock data instead of auth-dependent fetch ---
+    const mockJobs = [
+      {
+        id: 'demo-employer-001',
+        title: 'Cross-Chain Bridge Audit',
+        status: 'active',
+        total_staked: 5.0,
+        worker_address: '0x9a2f...d4e1',
+        milestones: [{ id: 1, title: 'Phase 1' }, { id: 2, title: 'Phase 2' }],
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'demo-employer-002',
+        title: 'DeFi Protocol Frontend',
+        status: 'active',
+        total_staked: 3.5,
+        worker_address: '0x4b7c...a3f8',
+        milestones: [{ id: 1, title: 'Design' }],
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'demo-employer-003',
+        title: 'Smart Contract Security Review',
+        status: 'completed',
+        total_staked: 4.0,
+        worker_address: '0x1e8d...c7b2',
+        milestones: [{ id: 1, title: 'Review' }, { id: 2, title: 'Report' }],
+        created_at: new Date().toISOString(),
+      },
+    ];
 
-      // Fetch jobs where user is employer
-      const { data: employerJobs, error } = await supabase
-        .from('jobs')
-        .select(`
-          *,
-          milestones (*)
-        `)
-        .eq('employer_address', '0x7e1b...') // Placeholder for actual wallet mapping
-        .order('created_at', { ascending: false });
+    setJobs(mockJobs);
+    setStats({
+      totalStaked: 12.5,
+      activeContracts: 2,
+      releasedFunds: 4.0,
+      disputedFunds: 0,
+    });
+    setLoading(false);
 
-      if (employerJobs) {
-        setJobs(employerJobs);
-        const staked = employerJobs.reduce((sum, j) => sum + Number(j.total_staked), 0);
-        const active = employerJobs.filter(j => j.status === 'active').length;
-        const disputed = employerJobs.filter(j => j.status === 'disputed').reduce((sum, j) => sum + Number(j.total_staked), 0);
-        
-        setStats(prev => ({ 
-          ...prev, 
-          totalStaked: staked, 
-          activeContracts: active,
-          disputedFunds: disputed 
-        }));
-      }
-      setLoading(false);
-    };
-
-    fetchEmployerData();
+    // --- ORIGINAL (re-enable after hackathon) ---
+    // const fetchEmployerData = async () => {
+    //   setLoading(true);
+    //   const { data: { user } } = await supabase.auth.getUser();
+    //   if (!user) return;
+    //   const { data: employerJobs } = await supabase
+    //     .from('jobs')
+    //     .select('*, milestones (*)')
+    //     .eq('employer_address', '0x7e1b...')
+    //     .order('created_at', { ascending: false });
+    //   if (employerJobs) { ... }
+    //   setLoading(false);
+    // };
+    // fetchEmployerData();
   }, []);
 
   if (loading) return (
@@ -58,6 +80,7 @@ export default function EmployerDashboard() {
       <p className="text-text-secondary text-[10px] font-bold uppercase tracking-widest">Syncing Institutional Ledger...</p>
     </div>
   );
+
 
   return (
     <RoleGate allowedRoles={['employer']}>

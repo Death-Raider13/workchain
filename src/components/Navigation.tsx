@@ -39,32 +39,22 @@ export function Navigation() {
 
   if (pathname === '/login' || pathname === '/signup') return null;
 
-  const dashboardHref = role === 'employer'
-    ? '/employer/dashboard'
-    : role === 'worker'
-      ? '/worker/dashboard'
-      : '/';
-
+  // --- HACKATHON DEMO MODE: All tabs always visible ---
   const tabs = [
     { name: 'Home', href: '/' },
-    { name: 'Public Ledger', href: '/jobs' },
+    { name: 'Service Ledger', href: '/jobs' },
+    { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Wallet', href: '/wallet' },
+    { name: 'Admin', href: '/admin' },
   ];
-
-  if (user) {
-    tabs.push({ name: 'Dashboard', href: dashboardHref });
-    tabs.push({ name: 'Wallet', href: '/wallet' });
-  }
-
-  if (role === 'admin') {
-    tabs.push({ name: 'Admin', href: '/admin' });
-  }
 
   return (
     <div className="mb-10">
       <div className="flex justify-between items-center bg-background-surface/30 p-2 rounded-xl border border-border-default/50">
         <nav className="flex gap-1">
           {tabs.map((tab) => {
-            const isActive = pathname === tab.href;
+            const isActive = pathname === tab.href || 
+              (tab.href === '/dashboard' && (pathname === '/employer/dashboard' || pathname === '/worker/dashboard'));
             return (
               <Link
                 key={tab.name}
@@ -97,9 +87,16 @@ export function Navigation() {
               </button>
             </div>
           ) : (
-            <div className="flex gap-4 items-center">
-              <Link href="/signup" className="btn-primary text-[11px] uppercase tracking-widest py-2 px-6">
-                Join Network
+            /* HACKATHON: Show demo badge instead of login */
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase tracking-widest text-accent-monad font-bold animate-pulse">Demo Mode</span>
+                <span className="text-xs font-mono text-text-primary">
+                  hackathon_guest
+                </span>
+              </div>
+              <Link href="/signup" className="btn-secondary text-[10px] uppercase tracking-widest py-2 px-4">
+                Sign Up
               </Link>
             </div>
           )}
