@@ -55,7 +55,7 @@ export function Navigation() {
       <div className="flex justify-between items-center bg-background-surface/30 p-2 rounded-xl border border-border-default/50">
         <nav className="flex gap-1">
           {tabs.map((tab) => {
-            const isActive = pathname === tab.href || 
+            const isActive = pathname === tab.href ||
               (tab.href === '/dashboard' && (pathname === '/employer/dashboard' || pathname === '/worker/dashboard'));
             return (
               <Link
@@ -73,15 +73,14 @@ export function Navigation() {
         </nav>
 
         <div className="flex gap-4 items-center pr-2">
-            /* HACKATHON: Show demo badge ONLY */
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] uppercase tracking-widest text-accent-monad font-bold animate-pulse">Network Status</span>
-                <span className="text-xs font-mono text-text-primary">
-                  monad_mainnet_beta
-                </span>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] uppercase tracking-widest text-accent-monad font-bold animate-pulse">Network Status</span>
+              <span className="text-xs font-mono text-text-primary">
+                monad_mainnet_beta
+              </span>
             </div>
+          </div>
 
         </div>
       </div>
