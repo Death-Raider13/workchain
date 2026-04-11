@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { checkBackendHealth, getJobsForAddress, getJob } from '@/lib/api';
 
 import { RoleGate } from '@/components/RoleGate';
 
@@ -16,63 +17,93 @@ export default function EmployerDashboard() {
     disputedFunds: 0
   });
   const [jobs, setJobs] = useState<any[]>([]);
+  const [dataSource, setDataSource] = useState<'live' | 'mock'>('mock');
+
+  // Mock data — used as fallback when backend is unreachable
+  const MOCK_JOBS = [
+    {
+      id: 'demo-employer-001',
+      title: 'Cross-Chain Bridge Audit',
+      status: 'active',
+      total_staked: 5.0,
+      worker_address: '0x9a2f...d4e1',
+      milestones: [{ id: 1, title: 'Phase 1' }, { id: 2, title: 'Phase 2' }],
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'demo-employer-002',
+      title: 'DeFi Protocol Frontend',
+      status: 'active',
+      total_staked: 3.5,
+      worker_address: '0x4b7c...a3f8',
+      milestones: [{ id: 1, title: 'Design' }],
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'demo-employer-003',
+      title: 'Smart Contract Security Review',
+      status: 'completed',
+      total_staked: 4.0,
+      worker_address: '0x1e8d...c7b2',
+      milestones: [{ id: 1, title: 'Review' }, { id: 2, title: 'Report' }],
+      created_at: new Date().toISOString(),
+    },
+  ];
+  const MOCK_STATS = { totalStaked: 12.5, activeContracts: 2, releasedFunds: 4.0, disputedFunds: 0 };
 
   useEffect(() => {
-    // --- HACKATHON DEMO MODE: Mock data instead of auth-dependent fetch ---
-    const mockJobs = [
-      {
-        id: 'demo-employer-001',
-        title: 'Cross-Chain Bridge Audit',
-        status: 'active',
-        total_staked: 5.0,
-        worker_address: '0x9a2f...d4e1',
-        milestones: [{ id: 1, title: 'Phase 1' }, { id: 2, title: 'Phase 2' }],
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'demo-employer-002',
-        title: 'DeFi Protocol Frontend',
-        status: 'active',
-        total_staked: 3.5,
-        worker_address: '0x4b7c...a3f8',
-        milestones: [{ id: 1, title: 'Design' }],
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'demo-employer-003',
-        title: 'Smart Contract Security Review',
-        status: 'completed',
-        total_staked: 4.0,
-        worker_address: '0x1e8d...c7b2',
-        milestones: [{ id: 1, title: 'Review' }, { id: 2, title: 'Report' }],
-        created_at: new Date().toISOString(),
-      },
-    ];
+    const fetchData = async () => {
+      setLoading(true);
 
-    setJobs(mockJobs);
-    setStats({
-      totalStaked: 12.5,
-      activeContracts: 2,
-      releasedFunds: 4.0,
-      disputedFunds: 0,
-    });
-    setLoading(false);
+      // Try backend first
+      const backendUp = await checkBackendHealth();
 
-    // --- ORIGINAL (re-enable after hackathon) ---
-    // const fetchEmployerData = async () => {
-    //   setLoading(true);
-    //   const { data: { user } } = await supabase.auth.getUser();
-    //   if (!user) return;
-    //   const { data: employerJobs } = await supabase
-    //     .from('jobs')
-    //     .select('*, milestones (*)')
-    //     .eq('employer_address', '0x7e1b...')
-    //     .order('created_at', { ascending: false });
-    //   if (employerJobs) { ... }
-    //   setLoading(false);
-    // };
-    // fetchEmployerData();
+      if (backendUp) {
+        try {
+          // TODO: Replace with actual connected wallet address
+          const demoAddress = '0x0000000000000000000000000000000000000001';
+          const addressData = await getJobsForAddress(demoAddress);
+
+          if (addressData.total > 0) {
+            const jobDetails = await Promise.all(
+              addressData.employer_job_ids.map(id => getJob(id))
+            );
+            const validJobs = jobDetails.filter(Boolean).map((j: any) => ({
+              id: String(j.job_id),
+              title: j.title || `Job #${j.job_id}`,
+              status: j.status === 0 ? 'active' : j.status === 1 ? 'completed' : 'disputed',
+              total_staked: parseFloat(j.total_escrowed) / 1e18,
+              worker_address: j.worker,
+              milestones: [],
+              created_at: new Date().toISOString(),
+            }));
+            setJobs(validJobs);
+            const staked = validJobs.reduce((s, j) => s + j.total_staked, 0);
+            setStats({
+              totalStaked: staked,
+              activeContracts: validJobs.filter(j => j.status === 'active').length,
+              releasedFunds: 0,
+              disputedFunds: validJobs.filter(j => j.status === 'disputed').reduce((s, j) => s + j.total_staked, 0),
+            });
+            setDataSource('live');
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.warn('[Employer] Backend fetch failed, using mock', e);
+        }
+      }
+
+      // Fallback to mock
+      setJobs(MOCK_JOBS);
+      setStats(MOCK_STATS);
+      setDataSource('mock');
+      setLoading(false);
+    };
+
+    fetchData();
   }, []);
+
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-24 space-y-4">

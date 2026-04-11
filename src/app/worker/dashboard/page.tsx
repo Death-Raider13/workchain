@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useBlockchain } from '@/hooks/useBlockchain';
 import Link from 'next/link';
+import { checkBackendHealth, getJobsForAddress, getJob, getWorkerProfile } from '@/lib/api';
 
 import { RoleGate } from '@/components/RoleGate';
 
@@ -17,62 +18,91 @@ export default function WorkerDashboard() {
     completionRate: '100%'
   });
   const [jobs, setJobs] = useState<any[]>([]);
+  const [dataSource, setDataSource] = useState<'live' | 'mock'>('mock');
+
+  // Mock data — used as fallback
+  const MOCK_JOBS = [
+    {
+      id: 'demo-worker-001',
+      title: 'Monad DEX Interface Build',
+      status: 'active',
+      total_staked: 4.2,
+      employer_address: '0x3c8a...b5e2',
+      milestones: [{ id: 1, title: 'UI Design' }, { id: 2, title: 'Integration' }, { id: 3, title: 'Testing' }],
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'demo-worker-002',
+      title: 'NFT Marketplace Smart Contract',
+      status: 'active',
+      total_staked: 4.0,
+      employer_address: '0x7f2e...c1d9',
+      milestones: [{ id: 1, title: 'Contract' }, { id: 2, title: 'Audit' }],
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'demo-worker-003',
+      title: 'Token Vesting Dashboard',
+      status: 'completed',
+      total_staked: 3.8,
+      employer_address: '0x5d4b...e7a3',
+      milestones: [{ id: 1, title: 'Design' }, { id: 2, title: 'Build' }],
+      created_at: new Date().toISOString(),
+    },
+  ];
+  const MOCK_STATS = { totalEarned: 8.2, activeJobs: 2, reputation: 98, completionRate: '96%' };
 
   useEffect(() => {
-    // --- HACKATHON DEMO MODE: Mock data instead of auth-dependent fetch ---
-    const mockJobs = [
-      {
-        id: 'demo-worker-001',
-        title: 'Monad DEX Interface Build',
-        status: 'active',
-        total_staked: 4.2,
-        employer_address: '0x3c8a...b5e2',
-        milestones: [{ id: 1, title: 'UI Design' }, { id: 2, title: 'Integration' }, { id: 3, title: 'Testing' }],
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'demo-worker-002',
-        title: 'NFT Marketplace Smart Contract',
-        status: 'active',
-        total_staked: 4.0,
-        employer_address: '0x7f2e...c1d9',
-        milestones: [{ id: 1, title: 'Contract' }, { id: 2, title: 'Audit' }],
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'demo-worker-003',
-        title: 'Token Vesting Dashboard',
-        status: 'completed',
-        total_staked: 3.8,
-        employer_address: '0x5d4b...e7a3',
-        milestones: [{ id: 1, title: 'Design' }, { id: 2, title: 'Build' }],
-        created_at: new Date().toISOString(),
-      },
-    ];
+    const fetchData = async () => {
+      setLoading(true);
 
-    setJobs(mockJobs);
-    setStats({
-      totalEarned: 8.2,
-      activeJobs: 2,
-      reputation: 98,
-      completionRate: '96%',
-    });
-    setLoading(false);
+      const backendUp = await checkBackendHealth();
 
-    // --- ORIGINAL (re-enable after hackathon) ---
-    // const fetchWorkerData = async () => {
-    //   setLoading(true);
-    //   const { data: { user } } = await supabase.auth.getUser();
-    //   if (!user) return;
-    //   const { data: workerJobs } = await supabase
-    //     .from('jobs')
-    //     .select('*, milestones (*)')
-    //     .eq('worker_address', '0x7e1b...')
-    //     .order('created_at', { ascending: false });
-    //   if (workerJobs) { ... }
-    //   setLoading(false);
-    // };
-    // fetchWorkerData();
+      if (backendUp) {
+        try {
+          const demoAddress = '0x0000000000000000000000000000000000000001';
+          const addressData = await getJobsForAddress(demoAddress);
+          const profile = await getWorkerProfile(demoAddress);
+
+          if (addressData.total > 0) {
+            const jobDetails = await Promise.all(
+              addressData.worker_job_ids.map(id => getJob(id))
+            );
+            const validJobs = jobDetails.filter(Boolean).map((j: any) => ({
+              id: String(j.job_id),
+              title: j.title || `Job #${j.job_id}`,
+              status: j.status === 0 ? 'active' : j.status === 1 ? 'completed' : 'disputed',
+              total_staked: parseFloat(j.total_escrowed) / 1e18,
+              employer_address: j.employer,
+              milestones: [],
+              created_at: new Date().toISOString(),
+            }));
+            setJobs(validJobs);
+            setStats({
+              totalEarned: profile.total_earned_mon,
+              activeJobs: validJobs.filter(j => j.status === 'active').length,
+              reputation: profile.average_rating ? Math.round(profile.average_rating * 20) : 98,
+              completionRate: profile.total_jobs > 0
+                ? `${Math.round((profile.completed_jobs / profile.total_jobs) * 100)}%`
+                : '100%',
+            });
+            setDataSource('live');
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.warn('[Worker] Backend fetch failed, using mock', e);
+        }
+      }
+
+      // Fallback to mock
+      setJobs(MOCK_JOBS);
+      setStats(MOCK_STATS);
+      setDataSource('mock');
+      setLoading(false);
+    };
+
+    fetchData();
   }, []);
 
   if (loading) return (
