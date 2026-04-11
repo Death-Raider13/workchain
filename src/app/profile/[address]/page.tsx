@@ -34,33 +34,34 @@ export default function ProfilePage() {
          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
        </div>
 
-       <div className="-mt-24 px-10 relative z-10 space-y-10">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-            <div className="flex items-end gap-8">
-              <div className="w-40 h-40 rounded-3xl bg-background-elevated border-4 border-background-primary shadow-2xl flex items-center justify-center overflow-hidden group">
-                <div className="w-full h-full bg-gradient-to-br from-accent-monad to-background-surface flex items-center justify-center text-5xl font-black text-white group-hover:scale-110 transition-transform duration-700">
+       <div className="-mt-20 px-4 md:px-10 relative z-10 space-y-10">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6 bg-background-surface/40 backdrop-blur-md p-8 rounded-3xl border border-white/5 shadow-2xl">
+            <div className="flex flex-col md:flex-row items-center md:items-end gap-8 w-full md:w-auto">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-background-elevated border-4 border-background-primary shadow-2xl flex items-center justify-center overflow-hidden group shrink-0">
+                <div className="w-full h-full bg-gradient-to-br from-accent-monad to-background-surface flex items-center justify-center text-4xl md:text-5xl font-black text-white group-hover:scale-110 transition-transform duration-700">
                   {profile.address.slice(2, 4).toUpperCase()}
                 </div>
               </div>
-              <div className="pb-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-black text-white uppercase tracking-tighter">{profile.tier}</h1>
+              <div className="pb-2 space-y-3 text-center md:text-left">
+                <div className="flex flex-col md:flex-row items-center gap-3">
+                  <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter">{profile.tier}</h1>
                   {profile.verified && (
                     <span className="badge badge-active text-[10px] py-1 px-3">Protocol Verified</span>
                   )}
                 </div>
-                <div className="flex items-center gap-4">
-                  <p className="font-mono text-sm text-text-secondary">{profile.address}</p>
+                <div className="flex items-center justify-center md:justify-start gap-4">
+                  <p className="font-mono text-sm text-text-secondary">{profile.address.slice(0, 6)}...{profile.address.slice(-4)}</p>
                   <button className="text-[10px] text-accent-monad font-bold hover:text-white transition-colors uppercase tracking-widest">Copy Identifier</button>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 pb-4">
-              <button className="btn-secondary py-3 px-8 text-[11px] font-black uppercase tracking-widest">Connect ID</button>
-              <button className="btn-primary py-3 px-10 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-accent-monad/20">Init Agreement</button>
+            <div className="flex gap-4 w-full md:w-auto justify-center">
+              <button className="btn-secondary flex-1 md:flex-none py-3 px-8 text-[11px] font-black uppercase tracking-widest">Connect ID</button>
+              <button className="btn-primary flex-1 md:flex-none py-3 px-10 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-accent-monad/20">Init Agreement</button>
             </div>
           </div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {/* Left Col: Credentials */}

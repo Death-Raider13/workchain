@@ -54,9 +54,10 @@ export default function Login() {
     <div className="flex flex-col items-center justify-center min-h-[70vh] animate-fade-in">
       <div className="w-full max-w-[440px] space-y-8">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-accent-monad rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-accent-monad/20">
-            <div className="w-5 h-5 border-2 border-white rounded-full"></div>
+          <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 mx-auto mb-6 shadow-xl">
+            <img src="/logo.jpeg" alt="WorkChain Logo" className="w-full h-full object-cover" />
           </div>
+
           <h1 className="text-3xl font-bold tracking-tight text-white">Access WorkChain</h1>
           <p className="text-text-secondary text-sm">Institutional labor escrow and settlement platform</p>
         </div>

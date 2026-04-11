@@ -40,9 +40,13 @@ export default function Home() {
           <div className="w-2 h-2 bg-accent-monad rounded-full animate-pulse"></div>
           <span className="text-[10px] font-bold uppercase tracking-widest text-accent-monad">Institutional Escrow Protocol • Monad L1</span>
         </div>
+        <div className="w-40 h-40 mx-auto mb-10 overflow-hidden rounded-[2.5rem] border-4 border-accent-monad/30 shadow-2xl animate-float">
+          <img src="/logo.jpeg" alt="WorkChain Protocol" className="w-full h-full object-cover scale-110" />
+        </div>
         <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white uppercase leading-none">
           Work<span className="text-accent-monad">Chain</span>
         </h1>
+
         <p className="text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
           Decentralized Service Level Agreements (dSLA) with automated milestone settlement and audited proof-of-work on the Monad network.
         </p>
