@@ -47,9 +47,10 @@ export default function Home() {
           Decentralized Service Level Agreements (dSLA) with automated milestone settlement and audited proof-of-work on the Monad network.
         </p>
         <div className="flex flex-col md:flex-row items-center justify-center gap-6 pt-4">
-          <Link href="/signup" className="btn-primary py-4 px-12 text-sm uppercase tracking-widest shadow-2xl shadow-accent-monad/30 w-full md:w-auto font-black h-16 flex items-center">
-            Initialize Organization
+          <Link href="/dashboard" className="btn-primary py-4 px-12 text-sm uppercase tracking-widest shadow-2xl shadow-accent-monad/30 w-full md:w-auto font-black h-16 flex items-center">
+            Initialize Console
           </Link>
+
           <Link href="/jobs" className="btn-secondary py-4 px-12 text-sm uppercase tracking-widest hover:border-accent-monad transition-all w-full md:w-auto h-16 flex items-center">
             Browse Public Ledger
           </Link>

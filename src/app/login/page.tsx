@@ -129,9 +129,10 @@ export default function Login() {
 
           <div className="mt-8 pt-6 border-t border-border-default/50 text-center">
             <p className="text-sm text-text-secondary">
-              New to the network? <Link href="/signup" className="text-accent-monad hover:text-white transition-colors font-bold">Register organization</Link>
+              <Link href="/dashboard" className="text-accent-monad hover:text-white transition-colors font-bold uppercase tracking-widest text-[10px]">Return to Protocol Console</Link>
             </p>
           </div>
+
         </div>
 
         <div className="text-center">

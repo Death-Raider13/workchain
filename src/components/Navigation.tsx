@@ -73,35 +73,16 @@ export function Navigation() {
         </nav>
 
         <div className="flex gap-4 items-center pr-2">
-          {user ? (
+            /* HACKATHON: Show demo badge ONLY */
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end">
-                <span className="text-[10px] uppercase tracking-widest text-text-secondary font-bold">Authorized</span>
+                <span className="text-[10px] uppercase tracking-widest text-accent-monad font-bold animate-pulse">Network Status</span>
                 <span className="text-xs font-mono text-text-primary">
-                  {user.email?.split('@')[0]}
+                  monad_mainnet_beta
                 </span>
               </div>
-              <button
-                onClick={handleLogout}
-                className="btn-secondary text-[10px] uppercase tracking-widest py-2 px-4"
-              >
-                Sign Out
-              </button>
             </div>
-          ) : (
-            /* HACKATHON: Show demo badge instead of login */
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] uppercase tracking-widest text-accent-monad font-bold animate-pulse">Demo Mode</span>
-                <span className="text-xs font-mono text-text-primary">
-                  hackathon_guest
-                </span>
-              </div>
-              <Link href="/signup" className="btn-secondary text-[10px] uppercase tracking-widest py-2 px-4">
-                Sign Up
-              </Link>
-            </div>
-          )}
+
         </div>
       </div>
     </div>

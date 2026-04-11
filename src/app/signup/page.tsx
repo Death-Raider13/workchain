@@ -91,9 +91,10 @@ export default function Signup() {
                 {resendStatus === 'loading' ? 'Sending...' : resendStatus === 'success' ? 'Email Sent!' : 'Resend Link'}
               </button>
               {resendStatus === 'error' && <p className="text-status-danger text-[10px] text-center">{resendError}</p>}
-              <Link href="/login" className="btn-secondary w-full py-3 text-[10px] uppercase tracking-widest block text-center">
-                Return to Portal
+              <Link href="/dashboard" className="btn-secondary w-full py-3 text-[10px] uppercase tracking-widest block text-center">
+                Return to Protocol Console
               </Link>
+
             </div>
           </div>
           <p className="text-[10px] text-text-secondary font-mono uppercase tracking-[0.2em]">Audit Log: MAIL_DISPATCH_SUCCESS</p>
@@ -192,9 +193,10 @@ export default function Signup() {
 
           <div className="mt-8 pt-6 border-t border-border-default/50 text-center">
             <p className="text-sm text-text-secondary">
-              Already registered? <Link href="/login" className="text-accent-monad hover:text-white transition-colors font-bold">Sign in to organization</Link>
+              <Link href="/dashboard" className="text-accent-monad hover:text-white transition-colors font-bold uppercase tracking-widest text-[10px]">Return to Protocol Console</Link>
             </p>
           </div>
+
         </div>
 
         <div className="text-center">
