@@ -112,7 +112,20 @@ export default function Login() {
             >
               {loading ? 'Authenticating...' : 'Sign In'}
             </button>
+            <div className="flex items-center gap-4 py-2">
+              <div className="h-px bg-border-default flex-1"></div>
+              <span className="text-[10px] text-text-secondary uppercase font-bold tracking-widest">OR</span>
+              <div className="h-px bg-border-default flex-1"></div>
+            </div>
+            <Link 
+              href="/dashboard"
+              className="btn-secondary w-full text-xs uppercase tracking-widest py-3.5 text-center flex items-center justify-center gap-2 hover:border-accent-monad transition-all"
+            >
+              <span className="w-2 h-2 bg-accent-monad rounded-full animate-pulse"></span>
+              Direct Protocol Access
+            </Link>
           </form>
+
 
           <div className="mt-8 pt-6 border-t border-border-default/50 text-center">
             <p className="text-sm text-text-secondary">

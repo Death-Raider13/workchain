@@ -1,162 +1,90 @@
 // src/lib/api.ts
 // ============================================================
-// Centralized API client for the NOMO-WORKCHAIN backend.
-// Falls back to mock data when the backend is unreachable
-// (e.g., during hackathon demo without live backend).
+// Updated for "Hackathon Demo Mode"
+// Points to the Virtual Protocol Brain (mock-proto.ts)
 // ============================================================
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { MOCK_PROTO, MockJob, MockTransaction } from './mock-proto';
 
-// ── Generic fetch wrapper with timeout + mock fallback ───────────
+// Helper to simulate network latency
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function apiFetch<T>(path: string, fallback: T, options?: RequestInit): Promise<T> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+// ── Contract Endpoints ──
 
-    const res = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-    });
-
-    clearTimeout(timeout);
-
-    if (!res.ok) {
-      console.warn(`[API] ${path} returned ${res.status}, using fallback`);
-      return fallback;
-    }
-
-    return await res.json();
-  } catch (err) {
-    console.warn(`[API] ${path} unreachable, using mock fallback`, err);
-    return fallback;
-  }
+export async function getJob(jobId: any): Promise<any | null> {
+  await delay(800);
+  return MOCK_PROTO.getJobById(String(jobId));
 }
 
-
-// ── Contract Endpoints ── /contracts/* ────────────────────────────
-
-export interface JobData {
-  job_id: number;
-  employer: string;
-  worker: string;
-  title: string;
-  total_escrowed: string;
-  total_released: string;
-  status: number;
-  milestone_count: number;
-  escrow_progress: number;
+export async function getJobMilestones(jobId: any): Promise<any> {
+  await delay(500);
+  const job = MOCK_PROTO.getJobById(String(jobId));
+  return { job_id: jobId, milestones: job?.milestones || [] };
 }
 
-export interface MilestoneData {
-  index: number;
-  description: string;
-  amount_wei: string;
-  amount_mon: number;
-  released: boolean;
-  verified: boolean;
+export async function getEscrowProgress(jobId: any): Promise<{ job_id: any; progress: number }> {
+  const job = MOCK_PROTO.getJobById(String(jobId));
+  if (!job) return { job_id: jobId, progress: 0 };
+  
+  const total = job.total_staked;
+  const released = job.milestones
+    .filter(m => m.status === 'released')
+    .reduce((s, m) => s + m.amount, 0);
+  
+  return { job_id: jobId, progress: (released / total) * 100 };
 }
 
-export interface AddressJobsData {
-  address: string;
-  employer_job_ids: number[];
-  worker_job_ids: number[];
-  total: number;
-}
-
-export interface WorkerProfileData {
-  address: string;
-  total_jobs: number;
-  completed_jobs: number;
-  total_earned_mon: number;
-  average_rating: number | null;
-  rating_count: number;
-  completed_job_ids: number[];
-}
-
-
-export async function getJob(jobId: number): Promise<JobData | null> {
-  return apiFetch(`/contracts/jobs/${jobId}`, null);
-}
-
-export async function getJobMilestones(jobId: number): Promise<{ job_id: number; milestones: MilestoneData[] }> {
-  return apiFetch(`/contracts/jobs/${jobId}/milestones`, { job_id: jobId, milestones: [] });
-}
-
-export async function getEscrowProgress(jobId: number): Promise<{ job_id: number; progress: number }> {
-  return apiFetch(`/contracts/jobs/${jobId}/progress`, { job_id: jobId, progress: 0 });
-}
-
-export async function getJobsForAddress(address: string): Promise<AddressJobsData> {
-  return apiFetch(`/contracts/address/${address}/jobs`, {
+export async function getJobsForAddress(address: string): Promise<any> {
+  await delay(600);
+  const jobs = MOCK_PROTO.getJobs().filter(j => 
+    j.employer_address === address || j.worker_address === address
+  );
+  
+  return {
     address,
-    employer_job_ids: [],
-    worker_job_ids: [],
-    total: 0,
-  });
+    employer_job_ids: jobs.filter(j => j.employer_address === address).map(j => j.id),
+    worker_job_ids: jobs.filter(j => j.worker_address === address).map(j => j.id),
+    total: jobs.length,
+    jobs // Including the actual job objects for easier UI binding
+  };
 }
 
-export async function getWorkerProfile(address: string): Promise<WorkerProfileData> {
-  return apiFetch(`/contracts/address/${address}/profile`, {
-    address,
-    total_jobs: 0,
-    completed_jobs: 0,
-    total_earned_mon: 0,
-    average_rating: null,
-    rating_count: 0,
-    completed_job_ids: [],
-  });
+export async function getWorkerProfile(address: string): Promise<any> {
+  await delay(700);
+  return MOCK_PROTO.getProfile(address);
 }
 
 
-// ── Verification Endpoints ── /verify/* ──────────────────────────
+// ── Verification Endpoints ──
 
-export interface VerifyRequest {
-  milestone_id: number;
-  proof_type: 'github' | 'file' | 'link' | 'manual';
-  data: string;
+export async function submitVerification(data: any): Promise<any> {
+  await delay(1500);
+  return { status: 'queued', message: 'Proof submitted to Monad Validation Layer', milestone_id: data.milestone_id };
 }
 
-export interface VerifyResponse {
-  status: string;
-  message: string;
-  milestone_id: number;
-}
-
-export async function submitVerification(data: VerifyRequest): Promise<VerifyResponse> {
-  return apiFetch('/verify/', { status: 'queued', message: 'Mock: verification queued', milestone_id: data.milestone_id }, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function getVerificationStatus(milestoneId: number): Promise<{ status: string; message: string }> {
-  return apiFetch(`/verify/${milestoneId}`, { status: 'pending', message: 'Awaiting verification' });
+export async function getVerificationStatus(milestoneId: any): Promise<{ status: string; message: string }> {
+  return { status: 'pending', message: 'Awaiting decentralized consensus...' };
 }
 
 
-// ── Milestone Proposals Endpoints ── /milestones/* ───────────────
+// ── Milestone Proposals ──
 
-export async function getMilestoneProposals(jobId: number) {
-  return apiFetch(`/milestones/job/${jobId}`, { job_id: jobId, proposals: [] });
+export async function getMilestoneProposals(jobId: any) {
+  return { job_id: jobId, proposals: [] };
 }
 
 export async function getProposalStats() {
-  return apiFetch('/milestones/stats/total', { total: 0, by_status: {} });
+  const stats = MOCK_PROTO.getStats();
+  return { 
+    total: stats.activeContracts, 
+    by_status: { active: 3, open: 1, disputed: 1 } 
+  };
 }
 
 
-// ── Health Check ─────────────────────────────────────────────────
+// ── Health Check ──
 
 export async function checkBackendHealth(): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  // In Demo Mode, the "Backend" (Mock Protocol) is always healthy
+  return true;
 }

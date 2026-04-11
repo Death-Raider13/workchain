@@ -45,8 +45,10 @@ export function Navigation() {
     { name: 'Service Ledger', href: '/jobs' },
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Wallet', href: '/wallet' },
+    { name: 'Profile', href: '/profile/0x7e1b...d91c' },
     { name: 'Admin', href: '/admin' },
   ];
+
 
   return (
     <div className="mb-10">

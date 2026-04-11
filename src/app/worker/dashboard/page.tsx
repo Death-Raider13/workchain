@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useBlockchain } from '@/hooks/useBlockchain';
 import Link from 'next/link';
-import { checkBackendHealth, getJobsForAddress, getJob, getWorkerProfile } from '@/lib/api';
-
+import { getJobsForAddress, getWorkerProfile } from '@/lib/api';
+import { MOCK_PROTO } from '@/lib/mock-proto';
 import { RoleGate } from '@/components/RoleGate';
 
 export default function WorkerDashboard() {
@@ -18,87 +16,26 @@ export default function WorkerDashboard() {
     completionRate: '100%'
   });
   const [jobs, setJobs] = useState<any[]>([]);
-  const [dataSource, setDataSource] = useState<'live' | 'mock'>('mock');
-
-  // Mock data — used as fallback
-  const MOCK_JOBS = [
-    {
-      id: 'demo-worker-001',
-      title: 'Monad DEX Interface Build',
-      status: 'active',
-      total_staked: 4.2,
-      employer_address: '0x3c8a...b5e2',
-      milestones: [{ id: 1, title: 'UI Design' }, { id: 2, title: 'Integration' }, { id: 3, title: 'Testing' }],
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'demo-worker-002',
-      title: 'NFT Marketplace Smart Contract',
-      status: 'active',
-      total_staked: 4.0,
-      employer_address: '0x7f2e...c1d9',
-      milestones: [{ id: 1, title: 'Contract' }, { id: 2, title: 'Audit' }],
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'demo-worker-003',
-      title: 'Token Vesting Dashboard',
-      status: 'completed',
-      total_staked: 3.8,
-      employer_address: '0x5d4b...e7a3',
-      milestones: [{ id: 1, title: 'Design' }, { id: 2, title: 'Build' }],
-      created_at: new Date().toISOString(),
-    },
-  ];
-  const MOCK_STATS = { totalEarned: 8.2, activeJobs: 2, reputation: 98, completionRate: '96%' };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      // Demo Provider Address
+      const demoAddress = '0x7e1b...d91c';
+      const res = await getJobsForAddress(demoAddress);
+      
+      const workerJobs = res.jobs.filter((j: any) => j.worker_address === demoAddress);
+      setJobs(workerJobs);
 
-      const backendUp = await checkBackendHealth();
-
-      if (backendUp) {
-        try {
-          const demoAddress = '0x0000000000000000000000000000000000000001';
-          const addressData = await getJobsForAddress(demoAddress);
-          const profile = await getWorkerProfile(demoAddress);
-
-          if (addressData.total > 0) {
-            const jobDetails = await Promise.all(
-              addressData.worker_job_ids.map(id => getJob(id))
-            );
-            const validJobs = jobDetails.filter(Boolean).map((j: any) => ({
-              id: String(j.job_id),
-              title: j.title || `Job #${j.job_id}`,
-              status: j.status === 0 ? 'active' : j.status === 1 ? 'completed' : 'disputed',
-              total_staked: parseFloat(j.total_escrowed) / 1e18,
-              employer_address: j.employer,
-              milestones: [],
-              created_at: new Date().toISOString(),
-            }));
-            setJobs(validJobs);
-            setStats({
-              totalEarned: profile.total_earned_mon,
-              activeJobs: validJobs.filter(j => j.status === 'active').length,
-              reputation: profile.average_rating ? Math.round(profile.average_rating * 20) : 98,
-              completionRate: profile.total_jobs > 0
-                ? `${Math.round((profile.completed_jobs / profile.total_jobs) * 100)}%`
-                : '100%',
-            });
-            setDataSource('live');
-            setLoading(false);
-            return;
-          }
-        } catch (e) {
-          console.warn('[Worker] Backend fetch failed, using mock', e);
-        }
-      }
-
-      // Fallback to mock
-      setJobs(MOCK_JOBS);
-      setStats(MOCK_STATS);
-      setDataSource('mock');
+      const profile = await getWorkerProfile(demoAddress);
+      
+      setStats({
+        totalEarned: profile.totalEarned,
+        activeJobs: workerJobs.filter((j:any) => j.status === 'active').length,
+        reputation: profile.reputation,
+        completionRate: profile.completionRate
+      });
+      
       setLoading(false);
     };
 
@@ -107,133 +44,134 @@ export default function WorkerDashboard() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-24 space-y-4">
-      <div className="w-8 h-8 border-2 border-accent-monad/20 border-t-accent-monad rounded-full animate-spin"></div>
-      <p className="text-text-secondary text-[10px] font-bold uppercase tracking-widest">Syncing Provider Ledger...</p>
+      <div className="w-10 h-10 border-4 border-accent-monad/20 border-t-accent-monad rounded-full animate-spin"></div>
+      <p className="text-text-secondary text-[10px] font-bold uppercase tracking-widest animate-pulse">Fetching Provider Ledger...</p>
     </div>
   );
-
 
   return (
     <RoleGate allowedRoles={['worker']}>
       <div className="space-y-10 animate-fade-in pb-20">
-        {/* Worker Header */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border-default pb-10">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <span className="badge badge-active text-[10px]">Active Provider</span>
-              <span className="text-text-secondary text-[10px] font-mono uppercase tracking-widest">Node: monad-mainnet-beta</span>
+              <span className="text-text-secondary text-[10px] font-mono uppercase tracking-widest">Shard: monad-mv-beta</span>
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-white uppercase tracking-tighter">Provider Console</h1>
-            <p className="text-text-secondary text-sm font-medium">Manage your delivery pipeline and on-chain earnings</p>
+            <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none">Provider Console</h1>
+            <p className="text-text-secondary text-sm font-medium">Engineer your delivery pipeline and visualize on-chain labor fidelity.</p>
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex bg-background-surface p-1 rounded-lg border border-border-default h-10">
+            <div className="flex bg-background-surface p-1 rounded-xl border border-border-default h-12 shadow-inner">
               <button 
                 onClick={() => setCurrency('MON')}
-                className={`px-4 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all ${currency === 'MON' ? 'bg-accent-monad text-white shadow-lg' : 'text-text-secondary'}`}
+                className={`px-6 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all ${currency === 'MON' ? 'bg-accent-monad text-white shadow-lg' : 'text-text-secondary'}`}
               >
                 MON
               </button>
               <button 
                 onClick={() => setCurrency('NGN')}
-                className={`px-4 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all ${currency === 'NGN' ? 'bg-accent-monad text-white shadow-lg' : 'text-text-secondary'}`}
+                className={`px-6 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all ${currency === 'NGN' ? 'bg-accent-monad text-white shadow-lg' : 'text-text-secondary'}`}
               >
                 NGN
               </button>
             </div>
-            <Link href="/jobs" className="btn-primary py-2.5 px-8 text-[11px] uppercase tracking-widest shadow-lg shadow-accent-monad/20">Find Contracts</Link>
+            <Link href="/jobs" className="btn-primary py-3 px-8 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-accent-monad/20">Find Contracts</Link>
           </div>
         </div>
 
-        {/* Financial Tickers */}
+        {/* Analytics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="card bg-gradient-to-br from-background-surface to-background-elevated/30">
-            <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] font-bold mb-4">Net Earnings</p>
+          <div className="card bg-gradient-to-br from-background-surface to-background-elevated/30 border-accent-monad/30 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+            <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] font-black mb-4">Total Realized Revenue</p>
             <div className="space-y-1">
-              <h2 className="text-3xl font-bold text-white">
+              <h2 className="text-4xl font-black text-white">
                 {currency === 'MON' 
-                  ? `${stats.totalEarned} MON` 
-                  : `₦${(stats.totalEarned * 2500).toLocaleString()}`}
+                  ? `${stats.totalEarned.toLocaleString()} ` 
+                  : `₦${(stats.totalEarned * 2500).toLocaleString()} `}
+                <span className="text-sm font-bold text-text-secondary">{currency}</span>
               </h2>
-              <p className="text-[10px] text-text-muted font-mono">
-                {currency === 'MON' 
-                  ? `≈ ₦${(stats.totalEarned * 2500).toLocaleString()}` 
-                  : `≈ ${stats.totalEarned} MON`}
-              </p>
+              <p className="text-[10px] text-accent-monad font-mono tracking-widest uppercase truncate">Verified Settlements</p>
             </div>
           </div>
-        <div className="card">
-          <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] font-bold mb-4">Active Pipeline</p>
-          <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-accent-monad">{stats.activeJobs}</h2>
-            <p className="text-[10px] text-text-secondary font-mono tracking-widest uppercase">Verified Contracts</p>
-          </div>
-        </div>
-        <div className="card">
-          <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] font-bold mb-4">Network Reputation</p>
-          <div className="space-y-1">
-            <h2 className="text-3xl font-bold text-white">{stats.reputation}<span className="text-sm text-text-muted">/100</span></h2>
-            <p className="text-[10px] text-status-success font-mono uppercase tracking-widest">Tier: Elite Provider</p>
-          </div>
-        </div>
-        <div className="card border-accent-monad/20">
-          <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] font-bold mb-4">Labor Fidelity</p>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase">Health Score</span>
-              <span className="text-[10px] font-mono text-accent-monad">{stats.completionRate}</span>
-            </div>
-            <div className="w-full bg-background-elevated h-1 rounded-full overflow-hidden">
-              <div className="bg-accent-monad h-full" style={{ width: stats.completionRate }}></div>
+          <div className="card">
+            <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] font-black mb-4">Active Pipeline</p>
+            <div className="space-y-1">
+              <h2 className="text-4xl font-black text-accent-monad">{stats.activeJobs}</h2>
+              <p className="text-[10px] text-text-secondary font-mono tracking-widest uppercase">Ongoing Deliveries</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Service Ledger */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-1.5 h-6 bg-accent-monad rounded-full"></div>
-          <h3 className="text-xl font-bold tracking-tight uppercase">Service Ledger</h3>
+          <div className="card">
+            <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] font-black mb-4">Network Reputation</p>
+            <div className="space-y-2">
+              <div className="flex items-end gap-1">
+                <h2 className="text-4xl font-black text-white">{stats.reputation}</h2>
+                <span className="text-xs text-text-muted mb-1">/100</span>
+              </div>
+              <p className="text-[10px] text-status-success font-mono uppercase tracking-widest">Tier: Elite Provider</p>
+            </div>
+          </div>
+          <div className="card border-accent-monad/20">
+            <p className="text-[10px] text-text-secondary uppercase tracking-[0.2em] font-black mb-4">Labor Fidelity Score</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-white">Health</span>
+                <span className="text-[10px] font-mono text-accent-monad">{stats.completionRate}</span>
+              </div>
+              <div className="w-full bg-background-elevated h-1.5 rounded-full overflow-hidden border border-white/5">
+                <div className="bg-accent-monad h-full shadow-[0_0_10px_var(--accent-monad-glow)]" style={{ width: stats.completionRate }}></div>
+              </div>
+              <p className="text-[9px] text-text-muted uppercase text-center font-bold">Consensus Verified</p>
+            </div>
+          </div>
         </div>
 
-        {jobs.length === 0 ? (
-          <div className="card text-center py-24 border-dashed border-border-default bg-background-elevated/5">
-            <div className="w-16 h-16 bg-background-elevated rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl shadow-inner">📄</div>
-            <h4 className="text-lg font-bold mb-2">No active service contracts</h4>
-            <p className="text-text-secondary text-sm mb-8">Browse the global job board to initialize your provider identity.</p>
-            <Link href="/jobs" className="btn-secondary py-2.5 px-8 text-[11px] uppercase tracking-widest group">
-              Browse Board <span className="inline-block transition-transform group-hover:translate-x-1 ml-1">→</span>
-            </Link>
+        {/* Ledger */}
+        <div className="space-y-8">
+           <div className="flex items-center justify-between border-b border-border-default pb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-1.5 h-8 bg-accent-monad rounded-full"></div>
+              <h3 className="text-2xl font-black tracking-tight uppercase text-white">Service Delivery Pipeline</h3>
+            </div>
+            <Link href="/wallet" className="text-[10px] font-black uppercase tracking-widest text-accent-monad hover:text-white transition-colors">Check Capital Inflows →</Link>
           </div>
-        ) : (
+
           <div className="grid grid-cols-1 gap-4">
-            {jobs.map((job) => (
-              <Link key={job.id} href={`/jobs/${job.id}`} className="card group hover:border-accent-monad transition-all">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-3">
-                      <span className={`badge ${job.status === 'active' ? 'badge-active' : 'badge-complete'} text-[9px]`}>{job.status}</span>
-                      <span className="text-[10px] text-text-secondary font-mono tracking-widest uppercase">ID: {job.id.slice(0, 8)}</span>
+            {jobs.length === 0 ? (
+               <div className="card py-20 text-center border-dashed bg-transparent shadow-none opacity-50">
+                <p className="text-text-secondary font-mono text-[10px] uppercase tracking-widest">No active service contracts initialized.</p>
+               </div>
+            ) : (
+              jobs.map((job) => (
+                <Link key={job.id} href={`/jobs/${job.id}`} className="group relative">
+                  <div className="card bg-background-surface/40 hover:bg-background-elevated/40 border-border-default group-hover:border-accent-monad/40 transition-all duration-300 py-6 px-10 flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div className="flex items-center gap-8 w-full md:w-auto">
+                      <div className="w-14 h-14 rounded-2xl bg-background-elevated flex items-center justify-center font-black text-xs uppercase tracking-widest group-hover:bg-accent-monad group-hover:text-white transition-all shadow-inner">
+                        {job.category.slice(0, 2)}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                           <span className={`badge ${job.status === 'active' ? 'badge-active' : job.status === 'disputed' ? 'badge-disputed' : 'badge-complete'} text-[9px]`}>{job.status}</span>
+                           <span className="text-[10px] font-mono text-text-muted">ID: {job.id.slice(0, 12)}</span>
+                        </div>
+                        <h4 className="text-xl font-bold text-white group-hover:text-accent-monad transition-colors">{job.title}</h4>
+                        <div className="flex items-center gap-3 text-xs text-text-secondary">
+                          <span className="font-black text-accent-monad">{job.total_staked} MON Locked</span>
+                          <span className="w-1 h-1 bg-border-default rounded-full"></span>
+                          <span>Issuer: {job.employer_address.slice(0,10)}...</span>
+                        </div>
+                      </div>
                     </div>
-                    <h4 className="text-lg font-bold group-hover:text-accent-monad transition-colors">{job.title}</h4>
-                    <div className="flex items-center gap-4 text-xs">
-                      <p className="text-accent-monad font-bold">{job.total_staked} MON</p>
-                      <span className="w-1.5 h-1.5 bg-border-default rounded-full"></span>
-                      <p className="text-text-secondary">Milestones: {job.milestones?.length || 0}</p>
+                    <div className="flex flex-row md:flex-col items-center md:items-end w-full md:w-auto gap-4 md:gap-1">
+                       <button className="btn-secondary w-full md:w-auto py-2.5 px-8 text-[9px] font-black uppercase tracking-widest group-hover:bg-accent-monad group-hover:text-white transition-all">Submit Verification Proof</button>
                     </div>
                   </div>
-                  <div className="w-full md:w-auto">
-                    <button className="btn-secondary w-full py-2.5 px-6 text-[10px] uppercase tracking-widest group-hover:bg-accent-monad group-hover:text-white transition-all">
-                      View Protocol Details
-                    </button>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            )}
           </div>
-        )}
-      </div>
+        </div>
       </div>
     </RoleGate>
   );

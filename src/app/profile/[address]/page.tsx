@@ -1,187 +1,156 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { AuthGuard } from '@/components/AuthGuard';
+import { MOCK_PROTO } from '@/lib/mock-proto';
+import Link from 'next/link';
 
-interface JobRecord {
-  id: string;
-  title: string;
-  employer_address: string;
-  status: 'active' | 'completed' | 'disputed';
-  total_staked: number;
-}
-
-interface Profile {
-  address: string;
-  total_completed: number;
-  average_rating: number;
-  jobs: JobRecord[];
-}
-
-export default function WorkerProfile() {
+export default function ProfilePage() {
   const { address } = useParams();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       setLoading(true);
-      
-      const { data: jobs, error } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('worker_address', address);
-
-      if (error) {
-        console.error('Error fetching profile jobs:', error);
-      } else {
-        const completed = jobs?.filter(j => j.status === 'completed') || [];
-        setProfile({
-          address: address as string,
-          total_completed: completed.length,
-          average_rating: 4.9, // Mock rating as we don't have a ratings table yet
-          jobs: jobs || []
-        });
-      }
+      await new Promise(r => setTimeout(r, 1000));
+      setProfile(MOCK_PROTO.getProfile(address as string));
       setLoading(false);
     };
-
-    if (address) fetchProfile();
+    fetchData();
   }, [address]);
 
-  if (loading) return <div className="flex flex-col items-center justify-center py-24 space-y-4">
-    <div className="w-8 h-8 border-2 border-accent-monad/20 border-t-accent-monad rounded-full animate-spin"></div>
-    <p className="text-text-secondary text-[10px] font-bold uppercase tracking-widest">Querying Network Identity...</p>
-  </div>;
-  
-  if (!profile) return <div className="card text-center py-24">Profile metadata not found on-chain.</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-24 space-y-4">
+      <div className="w-10 h-10 border-4 border-accent-monad/20 border-t-accent-monad rounded-full animate-spin"></div>
+      <p className="text-text-secondary text-[10px] font-bold uppercase tracking-widest animate-pulse">Scanning Global Identity Index...</p>
+    </div>
+  );
 
   return (
-    <AuthGuard>
-      <div className="max-w-4xl mx-auto space-y-10 animate-fade-in pb-20">
-        {/* Profile Header */}
-        <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-8 border-b border-border-default pb-10">
-          <div className="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-            <div className="w-24 h-24 bg-gradient-to-br from-accent-monad to-background-elevated rounded-2xl flex items-center justify-center text-4xl shadow-xl shadow-accent-monad/10 border border-white/10">
-              👤
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-center md:justify-start gap-4">
-                <h1 className="text-3xl font-extrabold tracking-tight">Network Identity</h1>
-                <span className="badge badge-complete text-[10px]">Verified Oracle</span>
-              </div>
-              <p className="font-mono text-sm text-text-secondary">{profile.address}</p>
-              <div className="flex items-center justify-center md:justify-start gap-6 pt-2">
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-text-secondary uppercase font-bold tracking-widest">Trust Score</span>
-                  <span className="text-lg font-bold text-status-success">98.4%</span>
-                </div>
-                <div className="w-px h-8 bg-border-default"></div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-text-secondary uppercase font-bold tracking-widest">Escrow Volume</span>
-                  <span className="text-lg font-bold text-white">42,500 <span className="text-xs">MON</span></span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <button className="btn-secondary py-2.5 px-8 text-[11px] uppercase tracking-widest">Export Proof</button>
-        </div>
+    <div className="max-w-5xl mx-auto space-y-12 animate-fade-in pb-20">
+       {/* Header / Banner */}
+       <div className="relative h-48 rounded-3xl overflow-hidden bg-gradient-to-r from-accent-monad/40 via-background-elevated to-background-surface border border-white/5">
+         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+       </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Performance Metrics */}
-          <div className="card space-y-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-1.5 h-4 bg-accent-monad rounded-full"></div>
-              <h3 className="text-sm font-bold uppercase tracking-widest">Labor Fidelity Metrics</h3>
+       <div className="-mt-24 px-10 relative z-10 space-y-10">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+            <div className="flex items-end gap-8">
+              <div className="w-40 h-40 rounded-3xl bg-background-elevated border-4 border-background-primary shadow-2xl flex items-center justify-center overflow-hidden group">
+                <div className="w-full h-full bg-gradient-to-br from-accent-monad to-background-surface flex items-center justify-center text-5xl font-black text-white group-hover:scale-110 transition-transform duration-700">
+                  {profile.address.slice(2, 4).toUpperCase()}
+                </div>
+              </div>
+              <div className="pb-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-black text-white uppercase tracking-tighter">{profile.tier}</h1>
+                  {profile.verified && (
+                    <span className="badge badge-active text-[10px] py-1 px-3">Protocol Verified</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  <p className="font-mono text-sm text-text-secondary">{profile.address}</p>
+                  <button className="text-[10px] text-accent-monad font-bold hover:text-white transition-colors uppercase tracking-widest">Copy Identifier</button>
+                </div>
+              </div>
             </div>
-            
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-text-secondary">On-Time Delivery</span>
-                  <span className="text-white">100%</span>
-                </div>
-                <div className="w-full h-1.5 bg-background-elevated rounded-full overflow-hidden">
-                  <div className="h-full bg-status-success w-full shadow-[0_0_8px_rgba(29,158,117,0.4)]"></div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-text-secondary">Release Without Dispute</span>
-                  <span className="text-white">92.5%</span>
-                </div>
-                <div className="w-full h-1.5 bg-background-elevated rounded-full overflow-hidden">
-                  <div className="h-full bg-accent-monad w-[92.5%] shadow-[0_0_8px_rgba(108,71,255,0.4)]"></div>
-                </div>
-              </div>
+
+            <div className="flex gap-4 pb-4">
+              <button className="btn-secondary py-3 px-8 text-[11px] font-black uppercase tracking-widest">Connect ID</button>
+              <button className="btn-primary py-3 px-10 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-accent-monad/20">Init Agreement</button>
             </div>
           </div>
 
-          {/* Reputation Card */}
-          <div className="card space-y-6 bg-gradient-to-br from-background-surface to-background-elevated/30">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-1.5 h-4 bg-status-warning rounded-full shadow-[0_0_8px_rgba(239,159,39,0.4)]"></div>
-              <h3 className="text-sm font-bold uppercase tracking-widest">Network Reputation</h3>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-extrabold text-white">{profile.average_rating}</span>
-              <span className="text-text-secondary font-bold">/ 5.0</span>
-            </div>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              Derived from {profile.total_completed} institutional-grade deployments over the last 12 months.
-            </p>
-          </div>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            {/* Left Col: Credentials */}
+            <div className="space-y-8">
+               <div className="card space-y-6">
+                 <h3 className="text-sm font-black uppercase tracking-[0.2em] border-b border-white/5 pb-4">On-Chain Reputation</h3>
+                 <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-[9px] uppercase font-bold text-text-secondary">Fidelity Score</p>
+                      <p className="text-2xl font-black text-white">{profile.reputation}%</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[9px] uppercase font-bold text-text-secondary">Jobs Completed</p>
+                      <p className="text-2xl font-black text-white">{profile.completedJobs}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[9px] uppercase font-bold text-text-secondary">Completion</p>
+                      <p className="text-2xl font-black text-status-success">{profile.completionRate}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[9px] uppercase font-bold text-text-secondary">Total Realized</p>
+                      <p className="text-2xl font-black text-accent-monad">{profile.totalEarned.toLocaleString()}</p>
+                    </div>
+                 </div>
+               </div>
 
-        {/* History Table */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-1.5 h-6 bg-accent-monad rounded-full"></div>
-            <h3 className="text-xl font-bold tracking-tight">On-Chain Interaction History</h3>
+               <div className="card space-y-6">
+                 <h3 className="text-sm font-black uppercase tracking-[0.2em] border-b border-white/5 pb-4">Verified Skills</h3>
+                 <div className="flex flex-wrap gap-2">
+                   {profile.skills.map((s: string) => (
+                     <span key={s} className="px-3 py-1.5 bg-background-elevated border border-white/5 rounded-lg text-[10px] font-bold text-text-primary uppercase tracking-widest hover:border-accent-monad transition-all cursor-default">
+                       {s}
+                     </span>
+                   ))}
+                 </div>
+               </div>
+            </div>
+
+            {/* Right Col: Performance & History */}
+            <div className="lg:col-span-2 space-y-8">
+               <div className="card space-y-6 bg-gradient-to-br from-background-surface to-background-elevated/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-6 bg-accent-monad rounded-full"></div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter text-white">Execution History</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="flex items-center justify-between p-6 bg-background-primary/40 rounded-2xl border border-white/5 group hover:border-accent-monad/30 transition-all">
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-accent-monad uppercase tracking-widest">Contract Fragment #110{i}</p>
+                          <h4 className="text-lg font-bold text-white group-hover:text-accent-monad transition-colors">Protocol Refactor: Validator Node Logic</h4>
+                          <p className="text-xs text-text-secondary">Jan 2024 • Secured by 4,500 MON Escrow</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="badge badge-complete text-[9px]">Verified Settlement</span>
+                          <p className="text-sm font-mono mt-2 text-text-muted">★★★★★</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <button className="w-full py-4 text-[10px] font-black uppercase tracking-[0.3em] text-text-secondary hover:text-white transition-colors">Load Full Ledger</button>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="card space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Identity Verification</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-text-primary">GitHub Profile</span>
+                        <span className="text-status-success font-bold">✓ Linked</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs opacity-50">
+                        <span className="text-text-primary">LinkedIn Professional</span>
+                        <span className="text-text-muted">Not Linked</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="card space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-text-secondary">Network Status</h4>
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-status-success rounded-full animate-pulse shadow-[0_0_10px_var(--status-success-glow)]"></div>
+                      <span className="text-sm font-black text-white uppercase italic">Active on Monad</span>
+                    </div>
+                  </div>
+               </div>
+            </div>
           </div>
-          
-          <div className="card p-0 overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-background-elevated/20 border-b border-border-default/50">
-                  <th className="py-5 px-8 text-[10px] uppercase tracking-[0.2em] font-bold text-text-secondary">Contract Title</th>
-                  <th className="py-5 px-8 text-[10px] uppercase tracking-[0.2em] font-bold text-text-secondary">Counterparty</th>
-                  <th className="py-5 px-8 text-[10px] uppercase tracking-[0.2em] font-bold text-text-secondary text-center">Status</th>
-                  <th className="py-5 px-8 text-[10px] uppercase tracking-[0.2em] font-bold text-text-secondary text-right">Rating</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-default/30">
-                {profile.jobs.map((h) => (
-                  <tr key={h.id} className="group hover:bg-white/[0.02] transition-colors">
-                    <td className="py-5 px-8">
-                      <Link href={`/jobs/${h.id}`} className="text-sm font-bold text-white hover:text-accent-monad transition-colors">
-                        {h.title}
-                      </Link>
-                    </td>
-                    <td className="py-5 px-8">
-                      <p className="text-xs font-mono text-text-secondary">{h.employer_address}</p>
-                    </td>
-                    <td className="py-5 px-8 text-center">
-                      <span className={`badge text-[10px] ${
-                        h.status === 'active' ? 'badge-active' : 
-                        h.status === 'completed' ? 'badge-complete' : 'badge-disputed'
-                      }`}>
-                        {h.status}
-                      </span>
-                    </td>
-                    <td className="py-5 px-8 text-right font-medium">
-                      <span className="text-status-success font-bold">★ 5.0</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </AuthGuard>
+       </div>
+    </div>
   );
 }
