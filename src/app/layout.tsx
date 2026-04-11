@@ -6,10 +6,17 @@ export const metadata: Metadata = {
   title: 'WorkChain | Institutional Labor Escrow',
   description: 'On-chain labor escrow for the future of work on Monad',
   icons: {
-    icon: '/logo.jpeg',
-    shortcut: '/ogo.jpeg',
+    icon: [
+      { url: '/logo.jpeg' },
+      { url: '/ogo.jpeg', sizes: '32x32' }
+    ],
+    apple: [
+      { url: '/logo.jpeg' }
+    ],
+    shortcut: ['/logo.jpeg'],
   },
 };
+
 
 
 export default function RootLayout({
